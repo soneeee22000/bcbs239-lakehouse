@@ -119,7 +119,7 @@ def test_silver_preserves_negative_amounts(bronze_dir: Path) -> None:
             "internal_rating": [5],
             SILVER_LOAD_TS_COL: [datetime(2026, 5, 1, tzinfo=UTC)],
         },
-        schema_overrides={k: v for k, v in silver.schema.items()},
+        schema_overrides=dict(silver.schema.items()),
     ).select(silver.columns)
     polluted = pl.concat([silver, extra])
     bad = polluted.filter(pl.col("amount_eur") < 0).height

@@ -10,19 +10,17 @@ setup:
 synthetic:
 	$(PYTHON) -m bcbs239_lakehouse.data.synthetic --output data/synthetic --seed 42
 
-pipeline: synthetic
-	@echo "[bcbs239-lakehouse] Bronze -> Silver -> Gold pipeline (local PySpark)"
-	# Weekend 1 implementation
-	@echo "Pipeline implementation lands in Weekend 1 sprint."
+pipeline:
+	uv run python -m bcbs239_lakehouse.cli --root warehouse --synthetic-dir data/synthetic
 
-demo: pipeline
-	@echo "[bcbs239-lakehouse] Cold-start demo (PRD Story 1)"
+demo:
+	uv run python -m bcbs239_lakehouse.cli --root warehouse --synthetic-dir data/synthetic --counterparties 100 --seed 42
 
 inject-defects:
-	@echo "[bcbs239-lakehouse] Injecting known DQ defects (PRD Story 3)"
-	$(PYTHON) -m bcbs239_lakehouse.data.synthetic --output data/synthetic --seed 42 --inject-defects
+	uv run python -m bcbs239_lakehouse.cli --root warehouse --synthetic-dir data/synthetic --counterparties 100 --seed 42 --inject-defects
 
-repair-data: synthetic
+repair-data:
+	uv run python -m bcbs239_lakehouse.cli --root warehouse --synthetic-dir data/synthetic --counterparties 100 --seed 42
 
 # ── Quality gates ─────────────────────────────────────────────────────
 lint:
