@@ -23,6 +23,7 @@ coverage.xml
 
 # Spark / Delta local state
 spark-warehouse/
+warehouse/
 metastore_db/
 derby.log
 *.tmp
