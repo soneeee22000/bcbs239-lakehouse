@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+.venv/
+.python-version
+
+# uv
+uv.lock.bak
+
+# Testing
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+
+# Spark / Delta local state
+spark-warehouse/
+metastore_db/
+derby.log
+*.tmp
+.spark/
+
+# Databricks
+.databricks/
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+dbt_project/.user.yml
+
+# Synthetic data (regenerate via make synthetic)
+data/synthetic/*.csv
+data/synthetic/*.parquet
+!data/synthetic/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI tool artifacts (per global CLAUDE.md hygiene rule)
+.claude/
+.sixth/
+.cursor/
+.codex/
+.copilot/
+.aider*

@@ -1,0 +1,1 @@
+"""Unity Catalog lineage assertions."""

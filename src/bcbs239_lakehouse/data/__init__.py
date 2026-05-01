@@ -1,0 +1,1 @@
+"""Synthetic risk data generators."""
