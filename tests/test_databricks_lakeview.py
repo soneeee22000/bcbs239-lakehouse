@@ -46,11 +46,14 @@ def test_publish_creates_when_dashboard_absent() -> None:
     assert result.dashboard_id == "dash-001"
     assert result.display_name == DASHBOARD_NAME
 
-    create_kwargs = client.lakeview.create.call_args.kwargs
-    assert create_kwargs["display_name"] == DASHBOARD_NAME
-    assert create_kwargs["warehouse_id"] == "wh-test"
-    assert isinstance(create_kwargs["serialized_dashboard"], str)
-    assert "fact_dq_scorecard" in create_kwargs["serialized_dashboard"]
+    # SDK takes a single Dashboard object (positional). We assert on its fields.
+    client.lakeview.create.assert_called_once()
+    dashboard = client.lakeview.create.call_args.args[0]
+    assert getattr(dashboard, "display_name", None) == DASHBOARD_NAME
+    assert getattr(dashboard, "warehouse_id", None) == "wh-test"
+    serialized = getattr(dashboard, "serialized_dashboard", "") or ""
+    assert isinstance(serialized, str)
+    assert "fact_dq_scorecard" in serialized
     client.lakeview.update.assert_not_called()
 
 
@@ -67,10 +70,11 @@ def test_publish_updates_when_dashboard_present() -> None:
     assert result.dashboard_id == "dash-existing"
     client.lakeview.create.assert_not_called()
     client.lakeview.update.assert_called_once()
-    update_kwargs = client.lakeview.update.call_args.kwargs
-    assert update_kwargs["dashboard_id"] == "dash-existing"
-    assert update_kwargs["warehouse_id"] == "wh-test"
-    assert isinstance(update_kwargs["serialized_dashboard"], str)
+    args = client.lakeview.update.call_args.args
+    assert args[0] == "dash-existing"
+    dashboard = args[1]
+    assert getattr(dashboard, "warehouse_id", None) == "wh-test"
+    assert isinstance(getattr(dashboard, "serialized_dashboard", None), str)
 
 
 def test_publish_ignores_dashboards_with_other_names() -> None:

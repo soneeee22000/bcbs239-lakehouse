@@ -54,7 +54,7 @@ uc-teardown:
 	@echo "[bcbs239-lakehouse] uc-teardown is a manual step — see docs/DEPLOY.md (delete via Catalog Explorer)."
 
 lakeview-provision:
-	@echo "[bcbs239-lakehouse] lakeview-provision lands in Weekend 2 — see docs/DEPLOY.md for the manual import path."
+	uv run python -m bcbs239_lakehouse.databricks.cli lakeview
 
 # ── Housekeeping ──────────────────────────────────────────────────────
 clean:

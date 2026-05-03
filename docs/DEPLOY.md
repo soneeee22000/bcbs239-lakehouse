@@ -218,20 +218,55 @@ latest snapshot, with `score` between 0.0 and 1.0.
 
 ---
 
-## 9. (Optional, Weekend 2) Publish the Lakeview dashboard
+## 9. Publish the Lakeview dashboard
 
-`make lakeview-provision` is a stub today; the Weekend 2 build wires up
-`LakeviewPublisher` (already implemented and unit-tested at
-`src/bcbs239_lakehouse/databricks/lakeview.py`) into a CLI command.
+```bash
+make lakeview-provision
+```
 
-Until then, manual import:
+Calls `python -m bcbs239_lakehouse.databricks.cli lakeview` which:
 
-1. **New → Dashboard → Import from JSON** (or via the workspace API)
-2. Upload `src/bcbs239_lakehouse/databricks/dashboards/dq_scorecard.json`
-3. Bind it to a SQL warehouse (Free Edition includes one by default)
-4. The dashboard's underlying query is
-   `SELECT * FROM bcbs239_lakehouse.gold.fact_dq_scorecard` — refresh after
-   re-running `03_gold.py` to see scores update
+1. Discovers the workspace's SQL warehouse (Free Edition ships one by default
+   named "Serverless Starter Warehouse").
+2. Reads `src/bcbs239_lakehouse/databricks/dashboards/dq_scorecard.json`.
+3. Calls `LakeviewPublisher.publish()` — creates a new "BCBS 239 DQ Scorecard"
+   dashboard if absent, or updates the existing one.
+
+Output:
+
+```
+dashboard created: 'BCBS 239 DQ Scorecard' (id=01f146..., warehouse=53a002c7...)
+```
+
+Dashboard URL pattern: `https://{host}/sql/dashboardsv3/{dashboard_id}`.
+
+### Known limitation — widget visualizations
+
+The bundled JSON spec round-trips through the SDK correctly (datasets, page,
+widget skeletons all stored), but Lakeview's current widget-rendering format
+is more involved than the spec captures — when you open the dashboard for the
+first time, you'll see two empty widget cells with "Describe the
+visualization you want to create…" prompts.
+
+To finish populating them (~60 seconds, one-time):
+
+1. Click the first widget cell → "Visualizations" panel on the right →
+   choose **Table**, drag `source`, `dimension`, `score`, `sample_size`,
+   `failed_count` from the `dq_scorecard_latest` dataset onto the columns
+   shelf, set `score` format to `0.0%`.
+2. Click the second cell → choose **Line chart** → x: `snapshot_ts`,
+   y: `score`, color: `source_dimension` from the `dq_scorecard_trend`
+   dataset.
+3. Click **Publish** in the top-right.
+
+Re-running `make lakeview-provision` after the manual configuration will
+update the dashboard in place (idempotent), preserving the manual widget
+config because the publisher doesn't overwrite layout fields it doesn't
+explicitly set.
+
+A future-pass JSON-spec rev that auto-renders the widgets is left as a
+follow-up; the SQL-Editor-driven money shot in section 10 is sufficient
+for the recruiter pitch on its own.
 
 ---
 

@@ -63,6 +63,19 @@ class LakeviewPublisher:
                     return dashboard_id
         return None
 
+    def _build_dashboard(self, display_name: str, serialized: str) -> Any:
+        """Wrap the dashboard fields in the SDK's Dashboard dataclass.
+
+        Imported lazily so unit tests can mock the SDK without installing it.
+        """
+        from databricks.sdk.service.dashboards import Dashboard
+
+        return Dashboard(
+            display_name=display_name,
+            serialized_dashboard=serialized,
+            warehouse_id=self._warehouse_id,
+        )
+
     def publish(
         self,
         display_name: str = DASHBOARD_NAME,
@@ -72,23 +85,16 @@ class LakeviewPublisher:
         serialized = self._load_spec(spec_path)
         lakeview = cast(Any, self._client).lakeview
         existing_id = self._find_existing_dashboard_id(display_name)
+        dashboard = self._build_dashboard(display_name, serialized)
         if existing_id is None:
-            response = lakeview.create(
-                display_name=display_name,
-                serialized_dashboard=serialized,
-                warehouse_id=self._warehouse_id,
-            )
+            response = lakeview.create(dashboard)
             dashboard_id = getattr(response, "dashboard_id", "") or ""
             return DashboardResult(
                 dashboard_id=dashboard_id,
                 display_name=display_name,
                 created=True,
             )
-        lakeview.update(
-            dashboard_id=existing_id,
-            serialized_dashboard=serialized,
-            warehouse_id=self._warehouse_id,
-        )
+        lakeview.update(existing_id, dashboard)
         return DashboardResult(
             dashboard_id=existing_id,
             display_name=display_name,

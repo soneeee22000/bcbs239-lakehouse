@@ -2,28 +2,25 @@
   "datasets": [
     {
       "name": "dq_scorecard_latest",
-      "displayName": "Latest DQ snapshot",
+      "displayName": "Latest DQ snapshot per (source, dimension)",
       "queryLines": [
-        "SELECT",
-        "  source,",
-        "  dimension,",
-        "  score,",
-        "  sample_size,",
-        "  failed_count,",
-        "  snapshot_ts",
+        "SELECT source,",
+        "       dimension,",
+        "       ROUND(score, 4) AS score,",
+        "       sample_size,",
+        "       failed_count,",
+        "       snapshot_ts",
         "FROM bcbs239_lakehouse.gold.fact_dq_scorecard",
         "QUALIFY ROW_NUMBER() OVER (PARTITION BY source, dimension ORDER BY snapshot_ts DESC) = 1"
       ]
     },
     {
       "name": "dq_scorecard_trend",
-      "displayName": "DQ score trend",
+      "displayName": "DQ score trend over snapshots",
       "queryLines": [
-        "SELECT",
-        "  snapshot_ts,",
-        "  source,",
-        "  dimension,",
-        "  score",
+        "SELECT snapshot_ts,",
+        "       CONCAT(source, '.', dimension) AS source_dimension,",
+        "       score",
         "FROM bcbs239_lakehouse.gold.fact_dq_scorecard",
         "ORDER BY snapshot_ts"
       ]
@@ -36,111 +33,42 @@
       "layout": [
         {
           "widget": {
-            "name": "completeness_scorecard",
+            "name": "scorecard_table",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
                   "datasetName": "dq_scorecard_latest",
-                  "fields": [{ "name": "score", "expression": "AVG(score)" }],
-                  "filters": [{ "field": "dimension", "value": "completeness" }]
+                  "fields": [
+                    { "name": "source", "expression": "`source`" },
+                    { "name": "dimension", "expression": "`dimension`" },
+                    { "name": "score", "expression": "`score`" },
+                    { "name": "sample_size", "expression": "`sample_size`" },
+                    { "name": "failed_count", "expression": "`failed_count`" }
+                  ],
+                  "disaggregated": true
                 }
               }
             ],
             "spec": {
-              "version": 2,
-              "widgetType": "counter",
+              "version": 1,
+              "widgetType": "table",
               "encodings": {
-                "value": {
-                  "fieldName": "score",
-                  "displayName": "Completeness",
-                  "format": "0.0%"
-                }
+                "columns": [
+                  { "fieldName": "source", "displayName": "Source" },
+                  { "fieldName": "dimension", "displayName": "Dimension" },
+                  {
+                    "fieldName": "score",
+                    "displayName": "Score",
+                    "numberFormat": "0.0%"
+                  },
+                  { "fieldName": "sample_size", "displayName": "Sample size" },
+                  { "fieldName": "failed_count", "displayName": "Failed count" }
+                ]
               }
             }
           },
-          "position": { "x": 0, "y": 0, "width": 1, "height": 2 }
-        },
-        {
-          "widget": {
-            "name": "accuracy_scorecard",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "dq_scorecard_latest",
-                  "fields": [{ "name": "score", "expression": "AVG(score)" }],
-                  "filters": [{ "field": "dimension", "value": "accuracy" }]
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "score",
-                  "displayName": "Accuracy",
-                  "format": "0.0%"
-                }
-              }
-            }
-          },
-          "position": { "x": 1, "y": 0, "width": 1, "height": 2 }
-        },
-        {
-          "widget": {
-            "name": "timeliness_scorecard",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "dq_scorecard_latest",
-                  "fields": [{ "name": "score", "expression": "AVG(score)" }],
-                  "filters": [{ "field": "dimension", "value": "timeliness" }]
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "score",
-                  "displayName": "Timeliness",
-                  "format": "0.0%"
-                }
-              }
-            }
-          },
-          "position": { "x": 2, "y": 0, "width": 1, "height": 2 }
-        },
-        {
-          "widget": {
-            "name": "integrity_scorecard",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "dq_scorecard_latest",
-                  "fields": [{ "name": "score", "expression": "AVG(score)" }],
-                  "filters": [{ "field": "dimension", "value": "integrity" }]
-                }
-              }
-            ],
-            "spec": {
-              "version": 2,
-              "widgetType": "counter",
-              "encodings": {
-                "value": {
-                  "fieldName": "score",
-                  "displayName": "Integrity",
-                  "format": "0.0%"
-                }
-              }
-            }
-          },
-          "position": { "x": 3, "y": 0, "width": 1, "height": 2 }
+          "position": { "x": 0, "y": 0, "width": 4, "height": 5 }
         },
         {
           "widget": {
@@ -151,10 +79,14 @@
                 "query": {
                   "datasetName": "dq_scorecard_trend",
                   "fields": [
-                    { "name": "snapshot_ts", "expression": "snapshot_ts" },
-                    { "name": "score", "expression": "score" },
-                    { "name": "dimension", "expression": "dimension" }
-                  ]
+                    { "name": "snapshot_ts", "expression": "`snapshot_ts`" },
+                    { "name": "score", "expression": "`score`" },
+                    {
+                      "name": "source_dimension",
+                      "expression": "`source_dimension`"
+                    }
+                  ],
+                  "disaggregated": true
                 }
               }
             ],
@@ -166,16 +98,16 @@
                 "y": {
                   "fieldName": "score",
                   "displayName": "DQ score",
-                  "scale": { "min": 0, "max": 1 }
+                  "scale": { "type": "quantitative", "min": 0, "max": 1 }
                 },
                 "color": {
-                  "fieldName": "dimension",
-                  "displayName": "Dimension"
+                  "fieldName": "source_dimension",
+                  "displayName": "Source.dimension"
                 }
               }
             }
           },
-          "position": { "x": 0, "y": 2, "width": 4, "height": 4 }
+          "position": { "x": 0, "y": 5, "width": 4, "height": 5 }
         }
       ]
     }

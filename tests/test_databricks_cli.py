@@ -170,6 +170,49 @@ def test_cmd_upload_errors_when_synthetic_csvs_missing(
     assert "make synthetic" in err or "data.synthetic" in err
 
 
+def test_cmd_lakeview_publishes_via_first_available_warehouse(
+    fake_env: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Lakeview command discovers the SQL warehouse and calls publisher.publish()."""
+    fake_client = MagicMock()
+    warehouse = MagicMock()
+    warehouse.id = "wh-test-1"
+    fake_client.warehouses.list.return_value = [warehouse]
+
+    fake_publisher = MagicMock()
+    publish_result = MagicMock()
+    publish_result.dashboard_id = "dash-bcbs239-1"
+    publish_result.display_name = "BCBS 239 DQ Scorecard"
+    publish_result.created = True
+    fake_publisher.publish.return_value = publish_result
+
+    with (
+        patch.object(cli, "WorkspaceClient", return_value=fake_client),
+        patch.object(cli, "LakeviewPublisher", return_value=fake_publisher) as pub_ctor,
+    ):
+        rc = cli.cmd_lakeview()
+    assert rc == 0
+    pub_ctor.assert_called_once()
+    assert pub_ctor.call_args.kwargs["warehouse_id"] == "wh-test-1"
+    fake_publisher.publish.assert_called_once()
+    out = capsys.readouterr().out
+    assert "BCBS 239 DQ Scorecard" in out
+    assert "dash-bcbs239-1" in out
+
+
+def test_cmd_lakeview_errors_when_no_warehouse_present(
+    fake_env: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Free-Edition workspaces normally ship a starter warehouse; if absent, give a hint."""
+    fake_client = MagicMock()
+    fake_client.warehouses.list.return_value = []
+    with patch.object(cli, "WorkspaceClient", return_value=fake_client):
+        rc = cli.cmd_lakeview()
+    assert rc == 5
+    err = capsys.readouterr().err
+    assert "warehouse" in err.lower()
+
+
 def test_main_dispatches_to_provision(fake_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli, "cmd_provision", lambda: 0)
     assert cli.main(["provision"]) == 0
@@ -178,6 +221,11 @@ def test_main_dispatches_to_provision(fake_env: None, monkeypatch: pytest.Monkey
 def test_main_dispatches_to_upload(fake_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli, "cmd_upload", lambda: 0)
     assert cli.main(["upload"]) == 0
+
+
+def test_main_dispatches_to_lakeview(fake_env: None, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "cmd_lakeview", lambda: 0)
+    assert cli.main(["lakeview"]) == 0
 
 
 def test_main_returns_usage_for_unknown_command(

@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, cast
 from databricks.sdk import WorkspaceClient
 from dotenv import load_dotenv
 
+from .lakeview import LakeviewPublisher
 from .unity_catalog import UnityCatalogProvisioner
 
 if TYPE_CHECKING:
@@ -144,9 +145,31 @@ def cmd_upload(synthetic_dir: Path = SYNTHETIC_DIR) -> int:
     return 0
 
 
+def cmd_lakeview() -> int:
+    """Publish the BCBS 239 DQ Scorecard Lakeview dashboard, idempotent."""
+    client, _ = _client_from_env()
+    warehouses = list(cast(Any, client).warehouses.list())
+    if not warehouses:
+        print(  # noqa: T201
+            "no SQL warehouse found in this workspace.\n"
+            "  Free Edition usually ships a 'Serverless Starter Warehouse' by default.",
+            file=sys.stderr,
+        )
+        return 5
+    warehouse_id = warehouses[0].id
+    publisher = LakeviewPublisher(client=client, warehouse_id=warehouse_id)
+    result = publisher.publish()
+    state = "created" if result.created else "updated"
+    print(  # noqa: T201
+        f"dashboard {state}: '{result.display_name}' "
+        f"(id={result.dashboard_id}, warehouse={warehouse_id})"
+    )
+    return 0
+
+
 def _usage() -> None:
     print(  # noqa: T201
-        "usage: python -m bcbs239_lakehouse.databricks.cli {provision|upload}",
+        "usage: python -m bcbs239_lakehouse.databricks.cli {provision|upload|lakeview}",
         file=sys.stderr,
     )
 
@@ -161,6 +184,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_provision()
     if cmd == "upload":
         return cmd_upload()
+    if cmd == "lakeview":
+        return cmd_lakeview()
     print(f"unknown command: {cmd}", file=sys.stderr)  # noqa: T201
     _usage()
     return 2
