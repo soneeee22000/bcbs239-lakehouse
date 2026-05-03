@@ -7,9 +7,42 @@ All notable changes to bcbs239-lakehouse. Format follows [Keep a Changelog](http
 ### Planned for v1.1
 
 - Great Expectations 1.x migration — wrap each existing `bcbs239_lakehouse.quality.dimensions` scorer in a corresponding GE Expectation, run via a checkpoint inside the Databricks notebook path. The pure-Python scorers stay as the local-first reference.
-- Live Databricks Community Edition demo run with screenshots of the published Lakeview dashboard
-- 30-second walkthrough GIF capturing scorecard reaction to `make inject-defects`
+- 30-second walkthrough GIF capturing scorecard reaction to `make inject-defects` (manual capture per `docs/DEMO-SCRIPT.md` §5)
+- Lakeview JSON-spec rev so widget visualisations auto-render from the spec without ~60s of manual UI configuration (current limitation documented in `docs/DEPLOY.md` §9)
 - BCBS 239 principle 4-of-14 expansion — adaptability and frequency dimensions
+
+## [0.3.0] — 2026-05-03
+
+Live Databricks Free Edition deploy: end-to-end provisioning, upload, refresh, and dashboard publish all driven from the terminal. The "portfolio piece" now actually runs on a real workspace.
+
+### Added
+
+- **Live UC provisioning CLI** (`src/bcbs239_lakehouse/databricks/cli.py`) — `python -m bcbs239_lakehouse.databricks.cli {provision|upload|lakeview}`. Wires the previously-unit-tested `UnityCatalogProvisioner` and `LakeviewPublisher` into a real terminal flow against the Databricks SDK. `make uc-provision`, `make uc-data-upload`, and `make lakeview-provision` are no longer stubs.
+- **Free-Edition Default-Storage handling** — when `catalogs.create()` raises the workspace-side `InvalidState: Metastore storage root URL does not exist` error (Free Edition's "Default Storage" mode requires UI catalog creation for the first catalog), the CLI catches it, calls `catalogs.get()` to verify the catalog exists, and either continues to schemas + volume or prints a one-click Catalog Explorer remediation.
+- **`UnityCatalogProvisioner.provision_volume`** — UC managed-volume creation for the `raw.synthetic` Bronze landing zone. Resolves `volume_type` to the SDK's `VolumeType` enum at call time so callers can pass the literal `"MANAGED"` / `"EXTERNAL"` string.
+- **CSV upload command** — `make uc-data-upload` pushes `data/synthetic/{counterparty,exposure,collateral}.csv` to `/Volumes/{catalog}/raw/synthetic/` via `WorkspaceClient.files.upload(overwrite=True)`. Idempotent.
+- **SQL-warehouse refresh pipeline** (`scripts/refresh_pipeline.py`, `make refresh`) — Bronze append + Silver overwrite-with-dedup + Gold refresh + new `fact_dq_scorecard` snapshot, all expressed as Spark SQL via the Statement Execution API. ~150 lines, terminal-driven, deterministic; equivalent to running notebooks 01→02→03 sequentially. Used by the defect-injection demo loop.
+- **`docs/DEPLOY.md`** (was 0 bytes) — 11-step Free-Edition end-to-end walkthrough: env setup → `make uc-provision` → CSV upload → notebook import → run → verify → defect injection → teardown. Includes the Default-Storage gotcha, a 7-row troubleshooting matrix, and the comparison query for clean-vs-dirty scorecard snapshots.
+- **`docs/DEMO-SCRIPT.md`** — recruiter-pitch capture order: 4 stills + 1 optional 30s GIF, with URLs, queries, captions, and a "what NOT to show" list. Time-budget table + minimum-viable-pitch fallback.
+- **`scripts/`** directory + per-file ruff ignores (`T201`, `S608`) for CLI-style scripts using constant-value f-string SQL.
+
+### Changed
+
+- **Lakeview publisher updated** for the current `databricks-sdk` Lakeview API (now takes a `Dashboard` dataclass positionally; previously took `display_name` / `serialized_dashboard` / `warehouse_id` kwargs). 5 lakeview tests updated to assert on the Dashboard object's fields.
+- **Lakeview JSON spec rewritten** — 4 counter widgets with widget-level filters were rejected by the current API (`InvalidParameterValue: filters[0].expression should not be empty`); replaced with 2 widgets (table + line trend chart) that move filtering into dataset SQL, bound to `bcbs239_lakehouse.gold.fact_dq_scorecard`. Round-trips exactly through the SDK.
+- **Coverage** raised from 94.74% (v0.2.0, 109 tests) to 95.30% (126 tests).
+- **README + CHANGELOG** refreshed to reflect Free Edition (replaces Community Edition since 2025), the new make targets, and links to DEPLOY.md / DEMO-SCRIPT.md.
+
+### Validated end-to-end on live workspace
+
+- Catalog `bcbs239_lakehouse` (UI-created), schemas `bronze`/`silver`/`gold`/`raw` + volume `raw.synthetic` (SDK-created via `make uc-provision`).
+- Synthetic CSVs uploaded, all 3 PySpark notebooks imported and executed on Free Edition serverless.
+- Bronze tables: 100 / 311 / 395 rows. Silver: same after dedup. Gold: 222 RWA rows + 10 scorecard rows for the clean (T1) snapshot.
+- Defect-injection loop verified: `collateral.timeliness 1.00 → 0.11`, `exposure.accuracy 1.00 → 0.91` between T1 (clean) and T2 (cleanliness=0.7) snapshots; other 8 dimensions remain at 1.00 (defect-injection rules don't break them).
+
+### Known limitation
+
+- Lakeview widget visualisations don't auto-render from the bundled JSON spec on the current API (datasets / queries / widget skeletons all stored correctly, but rendering needs ~60s of manual UI configuration once). Documented in `docs/DEPLOY.md` §9.
 
 ## [0.2.0] — 2026-05-01
 
@@ -56,6 +89,7 @@ Weekend 1: scaffolding + Bronze + Silver + Gold + end-to-end demo CLI.
 - Approved framing: "reference implementation of the BCBS 239 risk-data-aggregation lakehouse pattern Capgemini Risk Data Insights and Big-4 BCBS 239 advisory practices recommend G-SIBs build atop Databricks Unity Catalog".
 - Scope cuts (per PRD §8): synthetic data only; 4 of 14 principles; no external Airflow (csrd-lake's territory); Databricks Community Edition (no paid workspace).
 
-[Unreleased]: https://github.com/soneeee22000/bcbs239-lakehouse/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/soneeee22000/bcbs239-lakehouse/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/soneeee22000/bcbs239-lakehouse/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/soneeee22000/bcbs239-lakehouse/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/soneeee22000/bcbs239-lakehouse/releases/tag/v0.1.0

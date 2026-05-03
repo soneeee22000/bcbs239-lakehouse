@@ -5,8 +5,9 @@
 [![CI](https://github.com/soneeee22000/bcbs239-lakehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/soneeee22000/bcbs239-lakehouse/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![Tests: 109 / 109](https://img.shields.io/badge/tests-109%20passing-green.svg)](#tests)
-[![Coverage: 94.74%](https://img.shields.io/badge/coverage-94.74%25-green.svg)](#tests)
+[![Tests: 126 / 126](https://img.shields.io/badge/tests-126%20passing-green.svg)](#tests)
+[![Coverage: 95.30%](https://img.shields.io/badge/coverage-95.30%25-green.svg)](#tests)
+[![Databricks Free Edition](https://img.shields.io/badge/Databricks-Free%20Edition-orange.svg)](https://www.databricks.com/learn/free-edition)
 
 ## What this is (and isn't)
 
@@ -44,19 +45,19 @@ flowchart LR
 
 The same Bronze → Silver → Gold logic runs in two equivalent shapes — see [ADR-001](docs/ADR/ADR-001-delta-rs-for-library-path.md):
 
-|                | Library path (`src/`)                     | Databricks runtime path (`notebooks/`)        |
-| -------------- | ----------------------------------------- | --------------------------------------------- |
-| Engine         | Polars + `deltalake` (Rust)               | PySpark + `delta-spark`                       |
-| Targets        | Local dev + CI                            | Databricks Community Edition / paid workspace |
-| JVM required   | No                                        | Yes (Databricks-runtime managed)              |
-| Tests          | 109 / 109 passing locally                 | Verified manually on workspace                |
-| Storage format | Delta Lake (byte-compatible across paths) | Delta Lake                                    |
+|                | Library path (`src/`)                     | Databricks runtime path (`notebooks/`)         |
+| -------------- | ----------------------------------------- | ---------------------------------------------- |
+| Engine         | Polars + `deltalake` (Rust)               | PySpark + `delta-spark`                        |
+| Targets        | Local dev + CI                            | Databricks Free Edition / paid workspace       |
+| JVM required   | No                                        | Yes (Databricks-runtime managed)               |
+| Tests          | 126 / 126 passing locally                 | Verified end-to-end on Free Edition serverless |
+| Storage format | Delta Lake (byte-compatible across paths) | Delta Lake                                     |
 
 ## Tech stack
 
 | Layer           | Choice                                                                                                               |
 | --------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Compute         | Databricks Community Edition (free, public, reproducible)                                                            |
+| Compute         | Databricks Free Edition (free, public, reproducible — replaces Community Edition since 2025)                         |
 | Storage         | Delta Lake (delta-rs locally; delta-spark on workspace)                                                              |
 | Catalog         | Unity Catalog (lineage + tags + RLS) — provisioned via `databricks-sdk`                                              |
 | Transformation  | Polars (locally) / dbt-databricks 1.9 (workspace)                                                                    |
@@ -108,16 +109,32 @@ make test         # pytest with 80% coverage gate
 
 This is the smoke-test the recruiter pitch lives or dies on: dirty data must produce _visibly_ degraded scores, and clean data must score 1.000 across every dimension. Both verified end-to-end as part of `make test`.
 
-## Live Databricks demo (requires Community Edition workspace)
+## Live Databricks demo (Free Edition)
 
-Sign up free at <https://community.cloud.databricks.com>, then:
+Sign up free at <https://www.databricks.com/learn/free-edition>, then:
 
 ```bash
-cp .env.example .env  # fill in DATABRICKS_HOST + DATABRICKS_TOKEN
-make uc-provision     # idempotent: catalog + 3 schemas
-# (run notebooks/bronze.ipynb, silver.ipynb, gold.ipynb on the workspace)
-make lakeview-provision  # publish the BCBS 239 DQ scorecard dashboard
+cp .env.example .env       # fill in DATABRICKS_HOST + DATABRICKS_TOKEN
+make uc-provision          # catalog + bronze/silver/gold/raw schemas + raw.synthetic volume
+make synthetic             # generate clean CSVs locally
+make uc-data-upload        # push CSVs to /Volumes/{catalog}/raw/synthetic/
+# (Workspace UI: import notebooks/01_bronze.py / 02_silver.py / 03_gold.py and Run all)
+make lakeview-provision    # publish the BCBS 239 DQ Scorecard dashboard
 ```
+
+The defect-injection demo loop (PRD Story 3 — DQ scorecard reacts to upstream
+data drift) is one command after the initial deploy:
+
+```bash
+make inject-defects && make uc-data-upload && make refresh
+```
+
+`make refresh` runs `scripts/refresh_pipeline.py` — the SQL-warehouse
+equivalent of running notebooks 01→02→03 sequentially, deterministic and
+terminal-driven for CI / scripted demos.
+
+End-to-end walkthrough: [`docs/DEPLOY.md`](docs/DEPLOY.md). Recruiter-pitch
+capture order (4 stills + 1 GIF): [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md).
 
 ## Project structure
 
@@ -125,26 +142,31 @@ make lakeview-provision  # publish the BCBS 239 DQ scorecard dashboard
 bcbs239-lakehouse/
 ├── docs/
 │   ├── PRD.md                     # source of truth for all features
+│   ├── DEPLOY.md                  # Free-Edition end-to-end walkthrough
+│   ├── DEMO-SCRIPT.md             # recruiter-pitch capture order (4 stills + 1 GIF)
 │   ├── PORTABILITY.md             # Databricks <-> Snowflake equivalence matrix
 │   └── ADR/
 │       └── ADR-001-...md          # delta-rs vs delta-spark split
 ├── src/bcbs239_lakehouse/
 │   ├── data/synthetic.py          # counterparty + exposure + collateral generators
 │   ├── pipeline/
-│   │   ├── bronze.py              # idempotent CSV -> Delta ingest
+│   │   ├── bronze.py              # idempotent CSV -> Delta ingest (Polars + delta-rs)
 │   │   ├── silver.py              # typed casts + dedup
 │   │   └── gold.py                # RWA aggregation + DQ scorecard mart
 │   ├── quality/dimensions.py      # 4 BCBS 239 DQ dimension scorers
 │   ├── databricks/
-│   │   ├── unity_catalog.py       # UC catalog/schema/table provisioner
+│   │   ├── cli.py                 # provision / upload / lakeview SDK CLI
+│   │   ├── unity_catalog.py       # UC catalog/schema/volume/table provisioner
 │   │   ├── lakeview.py            # Lakeview dashboard publisher
 │   │   └── dashboards/
-│   │       └── dq_scorecard.json  # 5-widget Lakeview spec
-│   └── cli.py                     # `make demo` entry point
-├── notebooks/                     # Databricks notebook variants (Spark-native)
-├── dbt_project/                   # dbt-databricks Gold marts
+│   │       └── dq_scorecard.json  # Lakeview spec (table + line trend chart)
+│   └── cli.py                     # `make demo` entry point (local pipeline)
+├── notebooks/                     # PySpark notebook variants (01_bronze / 02_silver / 03_gold)
+├── scripts/
+│   └── refresh_pipeline.py        # SQL-warehouse Bronze->Silver->Gold refresh (make refresh)
+├── dbt_project/                   # dbt-databricks Gold marts (scaffold; full marts v1.1)
 ├── data/synthetic/                # generated CSVs (gitignored)
-├── tests/                         # 109 tests, 94.74% coverage
+├── tests/                         # 126 tests, 95.30% coverage
 └── .github/workflows/ci.yml
 ```
 
@@ -178,7 +200,7 @@ Full mapping in [`docs/PORTABILITY.md`](docs/PORTABILITY.md), including the Snow
 
 ## Tests
 
-109 tests, **94.74% coverage** on `src/bcbs239_lakehouse/`. Test breakdown:
+126 tests, **95.30% coverage** on `src/bcbs239_lakehouse/`. Test breakdown:
 
 - `test_smoke.py` — package importability (3 tests)
 - `test_synthetic.py` — generator determinism, defect injection, byte-equal CSVs (29 tests)
@@ -187,9 +209,13 @@ Full mapping in [`docs/PORTABILITY.md`](docs/PORTABILITY.md), including the Snow
 - `test_pipeline_silver.py` — typed casts + dedup (12 tests)
 - `test_pipeline_gold.py` — RWA aggregation + DQ scorecard (10 tests)
 - `test_cli.py` — end-to-end demo orchestrator (5 tests)
-- `test_databricks_unity_catalog.py` — mocked SDK idempotency (10 tests)
+- `test_databricks_cli.py` — CLI driver for provision / upload / lakeview (11 tests)
+- `test_databricks_unity_catalog.py` — mocked SDK idempotency (catalog / schema / volume / external table) (13 tests)
 - `test_databricks_lakeview.py` — mocked SDK create-or-update + JSON spec validity (5 tests)
 - `test_repo_hygiene.py` — killed-phrase anti-regression (8 tests)
+
+CI gates: `ruff check` + `ruff format --check` + `mypy --strict` + pytest with
+70% coverage floor (current actual 95.30%).
 
 ## Sibling project
 
