@@ -14,6 +14,25 @@
 > Shows the DQ scorecard, the clean-vs-dirty drift table, and the
 > medallion-layer row counts. No Databricks credentials needed in deploy.
 
+## Demo
+
+The live Vercel site above renders the same Gold-layer data the Databricks
+Lakeview scorecard binds to. The recruiter-pitch capture order (4 stills +
+1 short walkthrough GIF, defect-injection loop) is in
+[`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md).
+
+<!-- TODO: capture per docs/DEMO-SCRIPT.md and drop assets in docs/media/ -->
+<!--       1. docs/media/walkthrough.gif    — 30s defect-injection loop -->
+<!--       2. docs/media/dashboard-hero.png — Vercel landing page hero -->
+<!--       3. docs/media/lakeview-scorecard.png — Databricks Lakeview view -->
+<!--       Once captured, replace this comment block with the image refs.    -->
+
+| Capture                  | Source                                       | Path                                |
+| ------------------------ | -------------------------------------------- | ----------------------------------- |
+| 30s walkthrough GIF      | Local `make inject-defects && make refresh`  | `docs/media/walkthrough.gif`        |
+| Vercel landing-page hero | <https://bcbs239-lakehouse.vercel.app/>      | `docs/media/dashboard-hero.png`     |
+| Lakeview DQ scorecard    | Databricks workspace → SQL Editor → Lakeview | `docs/media/lakeview-scorecard.png` |
+
 ## What this is (and isn't)
 
 bcbs239-lakehouse is a **2-weekend reference implementation** of the lakehouse substrate every G-SIB Risk Data Office needs to operationalize the data-engineerable subset of BCBS 239's 14 principles — **completeness, accuracy, timeliness, integrity** — on Databricks + Delta Lake + Unity Catalog + dbt-databricks.
@@ -87,6 +106,39 @@ The same Bronze → Silver → Gold logic runs in two equivalent shapes — see 
 | Storage format | Delta Lake (byte-compatible across paths) | Delta Lake                                     |
 
 ## Tech stack
+
+```mermaid
+mindmap
+  root((bcbs239-lakehouse))
+    Compute
+      Databricks Free Edition
+      Local PySpark optional
+    Storage
+      Delta Lake
+        delta-rs + Polars
+        delta-spark + PySpark
+    Catalog
+      Unity Catalog
+        lineage
+        managed volumes
+        RLS-ready
+    Transformation
+      Polars locally
+      dbt-databricks 1.9
+      Spark SQL via Statement API
+    Data Quality
+      4 BCBS 239 scorers
+      Great Expectations 1.x planned
+    Dashboard
+      Lakeview JSON spec
+      Next.js 16 + React 19
+      Tailwind 4 on Vercel
+    Tooling
+      Python 3.12
+      uv lockfile
+      ruff + mypy strict
+      pytest 95.30 percent
+```
 
 | Layer           | Choice                                                                                                               |
 | --------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -165,6 +217,28 @@ make inject-defects && make uc-data-upload && make refresh
 `make refresh` runs `scripts/refresh_pipeline.py` — the SQL-warehouse
 equivalent of running notebooks 01→02→03 sequentially, deterministic and
 terminal-driven for CI / scripted demos.
+
+### Defect-injection demo loop
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Gen as synthetic.py<br/>generator
+    participant Vol as UC volume<br/>raw.synthetic
+    participant SQL as Databricks<br/>SQL Warehouse
+    participant Gold as fact_dq_scorecard
+    participant Web as Vercel + Lakeview
+
+    User->>Gen: make inject-defects<br/>(cleanliness=0.7)
+    Gen-->>User: dirty CSVs
+    User->>Vol: make uc-data-upload
+    User->>SQL: make refresh
+    SQL->>SQL: Bronze append
+    SQL->>SQL: Silver overwrite + dedup
+    SQL->>Gold: append T2 scorecard row
+    User->>Web: pnpm export-data + commit
+    Web-->>User: collateral.timeliness 1.00 → 0.11<br/>exposure.accuracy   1.00 → 0.91
+```
 
 End-to-end walkthrough: [`docs/DEPLOY.md`](docs/DEPLOY.md). Recruiter-pitch
 capture order (4 stills + 1 GIF): [`docs/DEMO-SCRIPT.md`](docs/DEMO-SCRIPT.md).
