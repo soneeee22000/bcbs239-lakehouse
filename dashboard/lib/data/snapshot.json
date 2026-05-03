@@ -1,0 +1,378 @@
+{
+  "extracted_at": "2026-05-03T02:32:52.052236+00:00",
+  "row_counts": {
+    "bronze": {
+      "counterparty": 200,
+      "exposure": 627,
+      "collateral": 795
+    },
+    "silver": {
+      "counterparty": 100,
+      "exposure": 316,
+      "collateral": 400
+    },
+    "gold": {
+      "fact_rwa_aggregation": 221,
+      "fact_dq_scorecard": 20
+    }
+  },
+  "scorecard_snapshots": [
+    {
+      "snapshot_ts": "2026-05-03T01:32:41.832Z",
+      "label": "T1_clean",
+      "dimensions": [
+        {
+          "source": "collateral",
+          "dimension": "accuracy",
+          "score": 1.0,
+          "sample_size": 395,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 395,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 395,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "timeliness",
+          "score": 1.0,
+          "sample_size": 395,
+          "failed_count": 0
+        },
+        {
+          "source": "counterparty",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 100,
+          "failed_count": 0
+        },
+        {
+          "source": "counterparty",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 100,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "accuracy",
+          "score": 1.0,
+          "sample_size": 311,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 311,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 311,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "timeliness",
+          "score": 1.0,
+          "sample_size": 311,
+          "failed_count": 0
+        }
+      ]
+    },
+    {
+      "snapshot_ts": "2026-05-03T01:56:01.357Z",
+      "label": "T2_dirty",
+      "dimensions": [
+        {
+          "source": "collateral",
+          "dimension": "accuracy",
+          "score": 1.0,
+          "sample_size": 400,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 400,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 400,
+          "failed_count": 0
+        },
+        {
+          "source": "collateral",
+          "dimension": "timeliness",
+          "score": 0.10999999999999999,
+          "sample_size": 400,
+          "failed_count": 356
+        },
+        {
+          "source": "counterparty",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 100,
+          "failed_count": 0
+        },
+        {
+          "source": "counterparty",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 100,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "accuracy",
+          "score": 0.9113924050632911,
+          "sample_size": 316,
+          "failed_count": 28
+        },
+        {
+          "source": "exposure",
+          "dimension": "completeness",
+          "score": 1.0,
+          "sample_size": 316,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "integrity",
+          "score": 1.0,
+          "sample_size": 316,
+          "failed_count": 0
+        },
+        {
+          "source": "exposure",
+          "dimension": "timeliness",
+          "score": 1.0,
+          "sample_size": 316,
+          "failed_count": 0
+        }
+      ]
+    }
+  ],
+  "rwa_top": [
+    {
+      "lei": "99990000000000000067",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 92412621.6,
+      "total_rwa_eur": 138618932.39999998
+    },
+    {
+      "lei": "99990000000000000086",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 4,
+      "total_amount_eur": 144932212.33999997,
+      "total_rwa_eur": 103691615.7
+    },
+    {
+      "lei": "99990000000000000046",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 3,
+      "total_amount_eur": 89023425.95,
+      "total_rwa_eur": 92894997.323
+    },
+    {
+      "lei": "99990000000000000074",
+      "exposure_type": "OFF_BALANCE_SHEET",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 51187086.08,
+      "total_rwa_eur": 76118659.87
+    },
+    {
+      "lei": "99990000000000000070",
+      "exposure_type": "OFF_BALANCE_SHEET",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 50899970.77,
+      "total_rwa_eur": 73561726.65
+    },
+    {
+      "lei": "99990000000000000002",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 3,
+      "total_amount_eur": 60367731.07,
+      "total_rwa_eur": 73020606.18
+    },
+    {
+      "lei": "99990000000000000010",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 46735965.82,
+      "total_rwa_eur": 70103948.73
+    },
+    {
+      "lei": "99990000000000000013",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 64348191.67,
+      "total_rwa_eur": 69238228.945
+    },
+    {
+      "lei": "99990000000000000063",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 45838155.29,
+      "total_rwa_eur": 68757232.935
+    },
+    {
+      "lei": "99990000000000000066",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 43651365.98,
+      "total_rwa_eur": 65477048.97
+    },
+    {
+      "lei": "99990000000000000005",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 3,
+      "total_amount_eur": 1326895.049999997,
+      "total_rwa_eur": 62489701.17
+    },
+    {
+      "lei": "99990000000000000050",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 39927706.04,
+      "total_rwa_eur": 59891559.06
+    },
+    {
+      "lei": "99990000000000000015",
+      "exposure_type": "DERIVATIVE",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 39121500.94,
+      "total_rwa_eur": 58682251.41
+    },
+    {
+      "lei": "99990000000000000052",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 39415539.55,
+      "total_rwa_eur": 56835312.735
+    },
+    {
+      "lei": "99990000000000000063",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 47790779.34,
+      "total_rwa_eur": 55533778.615
+    },
+    {
+      "lei": "99990000000000000010",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 62537957.93,
+      "total_rwa_eur": 54141009.3675
+    },
+    {
+      "lei": "99990000000000000006",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 46892939.03,
+      "total_rwa_eur": 53475478.724999994
+    },
+    {
+      "lei": "99990000000000000048",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 3,
+      "total_amount_eur": 96096382.67,
+      "total_rwa_eur": 53447214.5325
+    },
+    {
+      "lei": "99990000000000000034",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 48509534.49,
+      "total_rwa_eur": 48509534.49
+    },
+    {
+      "lei": "99990000000000000047",
+      "exposure_type": "OFF_BALANCE_SHEET",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 48363814.67,
+      "total_rwa_eur": 48363814.67
+    },
+    {
+      "lei": "99990000000000000033",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 94450875.36,
+      "total_rwa_eur": 47225437.68
+    },
+    {
+      "lei": "99990000000000000079",
+      "exposure_type": "DEBT_SECURITY",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 2,
+      "total_amount_eur": 55051869.58,
+      "total_rwa_eur": 46543756.335
+    },
+    {
+      "lei": "99990000000000000033",
+      "exposure_type": "OFF_BALANCE_SHEET",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 45804478.67,
+      "total_rwa_eur": 45804478.67
+    },
+    {
+      "lei": "99990000000000000056",
+      "exposure_type": "LOAN",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 1,
+      "total_amount_eur": 30453655.83,
+      "total_rwa_eur": 45680483.745
+    },
+    {
+      "lei": "99990000000000000024",
+      "exposure_type": "OFF_BALANCE_SHEET",
+      "as_of_date": "2026-03-31",
+      "exposure_count": 4,
+      "total_amount_eur": 88825229.18,
+      "total_rwa_eur": 44419881.9975
+    }
+  ],
+  "catalog": "bcbs239_lakehouse",
+  "synthetic": true,
+  "synthetic_lei_prefix": "9999"
+}

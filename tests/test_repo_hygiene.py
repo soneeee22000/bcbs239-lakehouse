@@ -24,10 +24,13 @@ KILLED_PHRASES = [
 ]
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-SCANNED_SUFFIXES = {".md", ".sql", ".py"}
+# Scan markdown, SQL, Python source AND the dashboard's TypeScript / JSX so
+# the discipline applies to portfolio web copy too.
+SCANNED_SUFFIXES = {".md", ".sql", ".py", ".ts", ".tsx", ".mjs"}
 SKIP_PARTS = {
     ".venv",
     "node_modules",
+    ".next",
     "site-packages",
     ".pytest_cache",
     ".mypy_cache",
