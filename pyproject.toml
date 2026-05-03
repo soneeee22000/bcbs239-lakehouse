@@ -90,6 +90,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S106"]
 "notebooks/**" = ["T201", "E402"]  # notebooks may print + have non-top-level imports
+"scripts/**" = ["T201", "S608"]    # CLI scripts print; SQL is constant-value f-strings
 
 [tool.ruff.format]
 quote-style = "double"

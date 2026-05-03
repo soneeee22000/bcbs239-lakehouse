@@ -1,4 +1,4 @@
-.PHONY: setup synthetic pipeline demo inject-defects repair-data lint test smoke ci uc-provision uc-teardown lakeview-provision clean
+.PHONY: setup synthetic pipeline demo inject-defects repair-data lint test smoke ci uc-provision uc-data-upload uc-teardown lakeview-provision refresh clean
 
 PYTHON ?= python
 
@@ -43,6 +43,12 @@ uc-provision:
 
 uc-data-upload:
 	uv run python -m bcbs239_lakehouse.databricks.cli upload
+
+# One-shot Bronze->Silver->Gold refresh against whatever CSVs are currently in the
+# raw.synthetic volume. Used for the defect-injection demo loop:
+#   make inject-defects && make uc-data-upload && make refresh
+refresh:
+	uv run python scripts/refresh_pipeline.py
 
 uc-teardown:
 	@echo "[bcbs239-lakehouse] uc-teardown is a manual step — see docs/DEPLOY.md (delete via Catalog Explorer)."

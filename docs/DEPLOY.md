@@ -235,27 +235,53 @@ Until then, manual import:
 
 ---
 
-## 10. Inject defects → watch the dashboard react
+## 10. Inject defects → watch the scorecard react
 
 Demonstrates that the DQ scorecard responds to real data quality drift
-(PRD Story 3).
+(PRD Story 3). Three commands:
 
 ```bash
-make inject-defects
+make inject-defects        # regenerate synthetic CSVs with cleanliness=0.7
+make uc-data-upload        # push dirty CSVs to /Volumes/.../raw/synthetic/
+make refresh               # Bronze append + Silver overwrite + Gold append-snapshot
 ```
 
-This re-generates synthetic CSVs with deliberate violations (negative amounts,
-future maturities, broken FKs). Re-upload to the volume (§5), re-run
-notebooks (§7), and the scorecard's `accuracy` / `integrity` scores drop
-visibly in the next snapshot row.
+The third command runs `scripts/refresh_pipeline.py` — the SQL-warehouse
+equivalent of running notebooks 01→02→03 sequentially, but as a one-shot
+Python script for the demo loop. ~150 lines of Spark SQL via the Statement
+Execution API.
+
+After `make refresh`, query both snapshots side-by-side:
+
+```sql
+WITH snaps AS (
+  SELECT DISTINCT snapshot_ts FROM bcbs239_lakehouse.gold.fact_dq_scorecard
+),
+labeled AS (
+  SELECT s.snapshot_ts,
+         CASE WHEN s.snapshot_ts = (SELECT min(snapshot_ts) FROM snaps)
+              THEN 'T1_clean' ELSE 'T2_dirty' END AS label,
+         f.source, f.dimension, f.score, f.failed_count
+  FROM snaps s
+  JOIN bcbs239_lakehouse.gold.fact_dq_scorecard f USING (snapshot_ts)
+)
+SELECT source, dimension,
+       MAX(CASE WHEN label = 'T1_clean' THEN ROUND(score, 4) END) AS T1_clean,
+       MAX(CASE WHEN label = 'T2_dirty' THEN ROUND(score, 4) END) AS T2_dirty
+FROM labeled GROUP BY source, dimension ORDER BY source, dimension;
+```
+
+Expected: `collateral.timeliness` drops `1.00 → 0.11`, `exposure.accuracy`
+drops `1.00 → 0.91`. See [`DEMO-SCRIPT.md`](DEMO-SCRIPT.md) for the full
+capture order.
 
 To restore a clean state:
 
 ```bash
-make repair-data
+python -m bcbs239_lakehouse.data.synthetic --output data/synthetic --seed 42
+make uc-data-upload
+make refresh
 ```
-
-Then re-upload + re-run.
 
 ---
 
