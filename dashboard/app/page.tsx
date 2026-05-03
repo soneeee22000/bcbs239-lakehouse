@@ -33,6 +33,10 @@ export default function HomePage() {
 
       <SyntheticDisclaimer />
 
+      <WhyBcbs239Section />
+
+      <RwaPrimerSection />
+
       {latest ? (
         <section aria-labelledby="scores-heading" className="space-y-3">
           <header className="flex items-baseline justify-between gap-2 flex-wrap">
@@ -98,6 +102,8 @@ export default function HomePage() {
           </p>
         </section>
       ) : null}
+
+      <TwoMartPatternSection />
 
       <section aria-labelledby="layers-heading" className="space-y-3">
         <h2 id="layers-heading" className="text-xl font-semibold">
@@ -182,6 +188,154 @@ function ArchitectureSection() {
         </a>{" "}
         for the Snowflake-stack equivalence matrix.
       </p>
+    </section>
+  );
+}
+
+function WhyBcbs239Section() {
+  return (
+    <section aria-labelledby="why-heading" className="space-y-3">
+      <h2 id="why-heading" className="text-xl font-semibold">
+        What is BCBS 239?
+      </h2>
+      <div className="space-y-3 text-sm sm:text-base text-[var(--color-foreground)] max-w-3xl">
+        <p>
+          BCBS 239 is a 14-principle Basel Committee regulation from 2013 that
+          requires the world&apos;s 30 largest banks (G-SIBs) to demonstrate to
+          regulators that they aggregate risk data{" "}
+          <strong>accurately, completely, and on time</strong> across legal
+          entities, risk types, and reporting periods.
+        </p>
+        <p>
+          Of the 14 principles, only{" "}
+          <strong>4 have a defensible software surface</strong> — completeness,
+          accuracy, timeliness, and integrity. The other 10 are governance,
+          organisational, and supervisory concerns that no software ships. This
+          project implements the 4 a data engineer can actually build.
+        </p>
+        <p className="text-[var(--color-muted-foreground)]">
+          Every G-SIB runs a multi-year BCBS 239 maturity programme. French
+          banks (BNP Paribas, Société Générale, BPCE, Crédit Agricole) build
+          internal evidence layers; advisory practices sell implementation
+          engagements around them. This repo is a public reference
+          implementation of that pattern on Databricks Free Edition.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function RwaPrimerSection() {
+  return (
+    <section aria-labelledby="rwa-heading" className="space-y-3">
+      <h2 id="rwa-heading" className="text-xl font-semibold">
+        Risk-weighted assets, in 60 seconds
+      </h2>
+      <div className="space-y-3 text-sm sm:text-base text-[var(--color-foreground)] max-w-3xl">
+        <p>
+          A bank can&apos;t say &quot;we have €1bn in loans&quot; — a €1bn loan
+          to the German government is far less risky than a €1bn unsecured SME
+          loan. So Basel says: multiply each exposure by a risk weight
+          reflecting how dangerous it is, then sum.
+        </p>
+        <pre className="overflow-x-auto rounded-md border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3 text-sm">
+          <code>RWA = Σ (exposure_amount × risk_weight)</code>
+        </pre>
+        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-muted)] text-left">
+              <tr>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Asset class
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Typical risk weight
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { c: "Cash, AAA government debt", w: "0%" },
+                { c: "Residential mortgages", w: "~35%" },
+                { c: "Investment-grade corporate loans", w: "100%" },
+                { c: "Speculative-grade / distressed", w: "150%" },
+              ].map((row) => (
+                <tr
+                  key={row.c}
+                  className="border-t border-[var(--color-border)]"
+                >
+                  <td className="px-3 py-2">{row.c}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{row.w}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Banks must hold regulatory capital ≥ a fixed percentage of their RWA
+          (8% under Basel III, plus buffers ≈ 10.5–13%). RWA is the{" "}
+          <strong>denominator of every capital-adequacy ratio</strong> banks
+          publish.
+        </p>
+        <p className="text-[var(--color-muted-foreground)]">
+          The arithmetic is trivial. The BCBS 239 problem is the data plumbing:
+          can a G-SIB pull every exposure across every legal entity, every desk,
+          every system, and roll it up correctly with auditable lineage when the
+          regulator asks? That&apos;s what this lakehouse pattern is for.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function TwoMartPatternSection() {
+  return (
+    <section aria-labelledby="two-mart-heading" className="space-y-3">
+      <h2 id="two-mart-heading" className="text-xl font-semibold">
+        Two-mart pattern: business answer + trust signal
+      </h2>
+      <div className="space-y-3 text-sm sm:text-base text-[var(--color-foreground)] max-w-3xl">
+        <p>
+          The Gold layer produces two parallel marts. That separation is the
+          BCBS 239 thesis in one design choice:
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
+            <p className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+              The business answer
+            </p>
+            <p className="font-mono text-sm">fact_rwa_aggregation</p>
+            <p className="text-sm">
+              For each (legal entity, exposure type, reporting date), aggregate{" "}
+              <code>amount_eur × risk_weight</code>. 222 rows on the synthetic
+              data —{" "}
+              <Link className="inline-link underline" href="/exposures">
+                browse the top entries
+              </Link>
+              .
+            </p>
+          </div>
+          <div className="rounded-lg border border-[var(--color-border)] p-4 space-y-2">
+            <p className="text-xs uppercase tracking-wide text-[var(--color-muted-foreground)]">
+              The trust signal
+            </p>
+            <p className="font-mono text-sm">fact_dq_scorecard</p>
+            <p className="text-sm">
+              For the same snapshot, score completeness, accuracy, timeliness,
+              integrity. 10 rows per pipeline run — the tiles{" "}
+              <span aria-hidden="true">↑</span> read this mart.
+            </p>
+          </div>
+        </div>
+        <p>
+          Bad rows (negative amounts, out-of-range risk weights) are{" "}
+          <em>still aggregated</em> into the business mart — the resulting
+          figures are wrong on dirty data, which is precisely the point: the
+          scorecard quantifies the wrongness independently. A regulator looking
+          at an RWA number wants to see, side by side, how trustworthy the
+          inputs were. That is the BCBS 239 evidence layer.
+        </p>
+      </div>
     </section>
   );
 }

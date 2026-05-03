@@ -9,6 +9,11 @@
 [![Coverage: 95.30%](https://img.shields.io/badge/coverage-95.30%25-green.svg)](#tests)
 [![Databricks Free Edition](https://img.shields.io/badge/Databricks-Free%20Edition-orange.svg)](https://www.databricks.com/learn/free-edition)
 
+> **Live dashboard:** [bcbs239-lakehouse.vercel.app](https://bcbs239-lakehouse.vercel.app)
+> — Next.js companion site reading a committed Gold-layer JSON snapshot.
+> Shows the DQ scorecard, the clean-vs-dirty drift table, and the
+> medallion-layer row counts. No Databricks credentials needed in deploy.
+
 ## What this is (and isn't)
 
 bcbs239-lakehouse is a **2-weekend reference implementation** of the lakehouse substrate every G-SIB Risk Data Office needs to operationalize the data-engineerable subset of BCBS 239's 14 principles — **completeness, accuracy, timeliness, integrity** — on Databricks + Delta Lake + Unity Catalog + dbt-databricks.
@@ -16,6 +21,34 @@ bcbs239-lakehouse is a **2-weekend reference implementation** of the lakehouse s
 It is built as a **portfolio fluency demonstration** for [Pyae Sone Kyaw](https://github.com/soneeee22000)'s freelance Cloud Data Engineer pitch (Paris, SIRET registered). Pair it with [csrd-lake](https://github.com/soneeee22000/csrd-lake) for the full _"regulated-data engineer who handles disclosure (CSRD) AND aggregation (BCBS 239) patterns at G-SIBs"_ story.
 
 It is **NOT** a vendor replacement, **NOT** a production system, **NOT** sold as a product, **NOT** validated against real G-SIB data, and **NOT** a substitute for an enterprise data-governance platform. It deliberately uses 2,000-ish rows of obviously-fake synthetic data (LEIs prefixed `9999`, names like `AcmeBank S.A.`).
+
+## Domain primer (BCBS 239 + RWA in 90 seconds)
+
+**BCBS 239** is a 14-principle Basel Committee regulation from 2013 that requires the world's 30 largest banks (G-SIBs) to demonstrate to regulators that they aggregate risk data **accurately, completely, and on time** across legal entities, risk types, and reporting periods. Of the 14 principles, only **4 have a defensible software surface** — completeness, accuracy, timeliness, and integrity. The other 10 are governance, organisational, and supervisory concerns that no software ships. This project implements the 4 a data engineer can actually build.
+
+**Risk-Weighted Assets (RWA)** is the metric being aggregated. A bank can't say "we have €1bn in loans" — a €1bn loan to the German government is far less risky than a €1bn unsecured SME loan. So Basel says: multiply each exposure by a risk weight reflecting how dangerous it is, then sum.
+
+```
+RWA = Σ (exposure_amount × risk_weight)
+```
+
+| Asset class                      | Typical risk weight |
+| -------------------------------- | ------------------- |
+| Cash, AAA government debt        | 0%                  |
+| Residential mortgages            | ~35%                |
+| Investment-grade corporate loans | 100%                |
+| Speculative-grade / distressed   | 150%                |
+
+Banks must hold regulatory capital ≥ a fixed percentage of their RWA (8% under Basel III, plus buffers ≈ 10.5–13%) — so RWA is the **denominator of every capital-adequacy ratio** banks publish. The arithmetic is trivial. The BCBS 239 problem is the **data plumbing**: pulling every exposure across every legal entity, every desk, every system, and rolling it up correctly with auditable lineage when the regulator asks. That is what this lakehouse pattern is for.
+
+### The two-mart pattern: business answer + trust signal
+
+The Gold layer produces two parallel marts. That separation is the BCBS 239 thesis in one design choice:
+
+1. **`fact_rwa_aggregation` — the business answer.** For each (legal entity, exposure type, reporting date), aggregate `amount_eur × risk_weight`. 222 rows on the synthetic data.
+2. **`fact_dq_scorecard` — the trust signal.** For the same snapshot, score completeness / accuracy / timeliness / integrity. 10 rows per pipeline run. This is what the Lakeview dashboard and the [Vercel companion site](https://bcbs239-lakehouse.vercel.app) bind to.
+
+Bad rows (negative amounts, out-of-range risk weights) are _still aggregated_ into the business mart — the resulting figures are wrong on dirty data, which is precisely the point: the scorecard quantifies the wrongness independently. A regulator looking at an RWA number wants to see, side by side, how trustworthy the inputs were. That is the BCBS 239 evidence layer.
 
 ## Architecture
 
