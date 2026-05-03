@@ -17,11 +17,12 @@ class _AlreadyExistsError(Exception):
 
 
 def _client_with_apis() -> MagicMock:
-    """Build a WorkspaceClient mock with .catalogs / .schemas / .tables / .lakeview."""
+    """Build a WorkspaceClient mock with .catalogs / .schemas / .tables / .volumes / .lakeview."""
     client = MagicMock()
     client.catalogs = MagicMock()
     client.schemas = MagicMock()
     client.tables = MagicMock()
+    client.volumes = MagicMock()
     client.lakeview = MagicMock()
     return client
 
@@ -84,6 +85,43 @@ def test_provision_layer_schemas_creates_three() -> None:
     results = p.provision_layer_schemas()
     assert [r.full_name.rsplit(".", 1)[-1] for r in results] == list(DEFAULT_LAYER_SCHEMAS)
     assert client.schemas.create.call_count == 3
+
+
+# ── volume ────────────────────────────────────────────────────────────
+
+
+def test_provision_volume_creates_when_absent() -> None:
+    client = _client_with_apis()
+    p = UnityCatalogProvisioner(client, catalog_name="bcbs239_lakehouse")
+    result = p.provision_volume("raw", "synthetic")
+    assert result.created is True
+    assert result.full_name == "bcbs239_lakehouse.raw.synthetic"
+    kwargs = client.volumes.create.call_args.kwargs
+    assert kwargs["catalog_name"] == "bcbs239_lakehouse"
+    assert kwargs["schema_name"] == "raw"
+    assert kwargs["name"] == "synthetic"
+    # SDK accepts either the VolumeType enum or its string value; we resolve
+    # to the enum at call time. Compare via str() / .value to remain
+    # decoupled from the SDK-version-specific enum class.
+    vol_type = kwargs["volume_type"]
+    assert getattr(vol_type, "value", vol_type) == "MANAGED"
+
+
+def test_provision_volume_idempotent_on_already_exists() -> None:
+    client = _client_with_apis()
+    client.volumes.create.side_effect = _AlreadyExistsError("Volume 'synthetic' already exists")
+    p = UnityCatalogProvisioner(client, catalog_name="bcbs239_lakehouse")
+    result = p.provision_volume("raw", "synthetic")
+    assert result.created is False
+    assert result.full_name == "bcbs239_lakehouse.raw.synthetic"
+
+
+def test_provision_volume_propagates_other_errors() -> None:
+    client = _client_with_apis()
+    client.volumes.create.side_effect = RuntimeError("permission denied")
+    p = UnityCatalogProvisioner(client, catalog_name="bcbs239_lakehouse")
+    with pytest.raises(RuntimeError, match="permission denied"):
+        p.provision_volume("raw", "synthetic")
 
 
 # ── external Delta table ──────────────────────────────────────────────

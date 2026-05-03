@@ -83,6 +83,44 @@ class UnityCatalogProvisioner:
         """Provision all medallion layer schemas in one call."""
         return [self.provision_schema(name) for name in schemas]
 
+    def provision_volume(
+        self,
+        schema_name: str,
+        volume_name: str,
+        volume_type: str = "MANAGED",
+    ) -> ProvisionResult:
+        """Create a UC volume under ``catalog.schema`` if not present.
+
+        Volumes back the Bronze CSV landing zone (``/Volumes/{catalog}/raw/synthetic/``)
+        that ``notebooks/01_bronze.py`` reads from. ``volume_type`` accepts
+        either the literal string ``"MANAGED"`` / ``"EXTERNAL"`` or a
+        ``databricks.sdk.service.catalog.VolumeType`` member; the value is
+        resolved to the SDK enum at call time so callers don't need to import
+        SDK types just to pass a constant.
+        """
+        volumes = cast(Any, self._client).volumes
+        full = f"{self._catalog_name}.{schema_name}.{volume_name}"
+        resolved_type: Any = volume_type
+        if isinstance(volume_type, str):
+            try:
+                from databricks.sdk.service.catalog import VolumeType
+
+                resolved_type = VolumeType(volume_type)
+            except (ImportError, ValueError):  # pragma: no cover — fallback for tests
+                resolved_type = volume_type
+        try:
+            volumes.create(
+                catalog_name=self._catalog_name,
+                schema_name=schema_name,
+                name=volume_name,
+                volume_type=resolved_type,
+            )
+            return ProvisionResult(full_name=full, created=True)
+        except Exception as exc:
+            if _is_already_exists(exc):
+                return ProvisionResult(full_name=full, created=False)
+            raise
+
     def register_external_delta_table(
         self,
         schema_name: str,

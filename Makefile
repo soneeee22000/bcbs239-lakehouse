@@ -39,13 +39,16 @@ ci: lint test
 
 # ── Databricks provisioning (idempotent) ──────────────────────────────
 uc-provision:
-	@echo "[bcbs239-lakehouse] Unity Catalog provisioning lands in Weekend 2."
+	uv run python -m bcbs239_lakehouse.databricks.cli provision
+
+uc-data-upload:
+	uv run python -m bcbs239_lakehouse.databricks.cli upload
 
 uc-teardown:
-	@echo "[bcbs239-lakehouse] Unity Catalog teardown lands in Weekend 2."
+	@echo "[bcbs239-lakehouse] uc-teardown is a manual step — see docs/DEPLOY.md (delete via Catalog Explorer)."
 
 lakeview-provision:
-	@echo "[bcbs239-lakehouse] Lakeview dashboard provisioning lands in Weekend 2."
+	@echo "[bcbs239-lakehouse] lakeview-provision lands in Weekend 2 — see docs/DEPLOY.md for the manual import path."
 
 # ── Housekeeping ──────────────────────────────────────────────────────
 clean:
